@@ -8,7 +8,7 @@ DM_Limit_Param limit_param[Num_Of_Motor] = {
 
 DmMotorDriver::DmMotorDriver(uint16_t motor_id, const std::string& interface_type, const std::string& can_interface, uint16_t master_id_offset,
                              DM_Motor_Model motor_model, double motor_zero_offset)
-    : MotorDriver(), can_(SocketCAN::get(can_interface)), motor_model_(motor_model) {
+    : MotorDriver(), can_(MotorsSocketCAN::get(can_interface)), motor_model_(motor_model) {
     if (interface_type != "can") {
         throw std::runtime_error("DM driver only support CAN interface");
     }
@@ -117,6 +117,8 @@ bool DmMotorDriver::write_motor_flash() { return true; }
 bool DmMotorDriver::set_motor_zero() {
     // send set zero command
     DmMotorDriver::set_motor_zero_dm();
+    Timer::sleep_for(normal_sleep_time);
+    DmMotorDriver::refresh_motor_status();
     Timer::sleep_for(setup_sleep_time);  // wait for motor to set zero
     logger_->info("motor_id: {0}\tposition: {1}\t", motor_id_, get_motor_pos());
     DmMotorDriver::unlock_motor();
@@ -125,7 +127,7 @@ bool DmMotorDriver::set_motor_zero() {
         return false;
     } else {
         logger_->info("set zero success");
-        return false;
+        return true;
     }
     // disable motor
 }
@@ -144,10 +146,10 @@ void DmMotorDriver::can_rx_cbk(const can_frame& rx_frame) {
     master_id_t = rx_frame.can_id;
     if ((rx_frame.data[0] & 0xF0) >> 4 > 7) {  // error code range from 8 to 15
         error_id_ = (rx_frame.data[0] & 0xF0) >> 4;
-        if (logger_) {
-            logger_->error("can_interface: {0}\tmotor_id: {1}\terror_id: 0x{2:x}", can_interface_, motor_id_, (uint32_t)error_id_);
+            if (logger_) {
+                logger_->error("can_interface: {0}\tmotor_id: {1}\terror_id: 0x{2:x}", can_interface_, motor_id_, (uint32_t)error_id_);
+            }
         }
-    }
     motor_pos_ =
         range_map(pos_int, uint16_t(0), bitmax<uint16_t>(16), -limit_param_.PosMax, limit_param_.PosMax) + motor_zero_offset_;
     motor_spd_ =

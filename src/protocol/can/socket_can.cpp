@@ -6,17 +6,17 @@
 
 #include "socket_can.hpp"
 
-std::shared_ptr<spdlog::logger> SocketCAN::logger_ = nullptr;
-std::unordered_map<std::string, std::shared_ptr<SocketCAN>> SocketCAN::instances_;
+std::shared_ptr<spdlog::logger> MotorsSocketCAN::logger_ = nullptr;
+std::unordered_map<std::string, std::shared_ptr<MotorsSocketCAN>> MotorsSocketCAN::instances_;
 
-SocketCAN::SocketCAN(std::string interface)
+MotorsSocketCAN::MotorsSocketCAN(std::string interface)
     : interface_(interface), sockfd_(INIT_FD), receiving_(false), tx_queue_(TX_QUEUE_SIZE) {
     open(interface);
 }
 
-SocketCAN::~SocketCAN() { this->close(); }
+MotorsSocketCAN::~MotorsSocketCAN() { this->close(); }
 
-void SocketCAN::open(std::string interface) {
+void MotorsSocketCAN::open(std::string interface) {
     sockfd_ = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (sockfd_ == INIT_FD) {
         logger_->error("Failed to create CAN socket");
@@ -61,7 +61,7 @@ void SocketCAN::open(std::string interface) {
         pthread_setname_np(pthread_self(), "can_rx");
         struct sched_param sp{}; sp.sched_priority = 80;
         if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp) != 0) {
-            throw std::runtime_error("Failed to set realtime priority for CAN RX thread");
+            logger_->error("Failed to set realtime priority for CAN RX thread");
         }
 
         int total_cores = std::thread::hardware_concurrency();
@@ -78,7 +78,7 @@ void SocketCAN::open(std::string interface) {
         CPU_ZERO(&cpuset);
         CPU_SET(cpu_id, &cpuset);
         if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
-            throw std::runtime_error("Failed to bind CAN RX thread to Core " + std::to_string(cpu_id));
+            logger_->error("Failed to bind CAN RX thread to Core {}", cpu_id);
         }
 
         fd_set descriptors;
@@ -93,7 +93,13 @@ void SocketCAN::open(std::string interface) {
             timeout.tv_sec = TIMEOUT_SEC;
             timeout.tv_usec = TIMEOUT_USEC;
 
-            if (::select(maxfd + 1, &descriptors, NULL, NULL, &timeout) == 1) {
+            int sel_ret = ::select(maxfd + 1, &descriptors, NULL, NULL, &timeout);
+            if (sel_ret < 0) {
+                if (errno == EINTR) continue;
+                logger_->error("CAN select error: {}", strerror(errno));
+                break;
+            }
+            if (sel_ret == 1) {
                 while (true){
                     int len = ::read(sockfd_, &rx_frame, CAN_MTU);
                     if (len < 0) {
@@ -127,7 +133,7 @@ void SocketCAN::open(std::string interface) {
         pthread_setname_np(pthread_self(), "can_tx");
         struct sched_param sp{}; sp.sched_priority = 80;
         if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp) != 0) {
-            throw std::runtime_error("Failed to set realtime priority for CAN TX thread");
+            logger_->error("Failed to set realtime priority for CAN TX thread");
         }
 
         int total_cores = std::thread::hardware_concurrency();
@@ -144,7 +150,7 @@ void SocketCAN::open(std::string interface) {
         CPU_ZERO(&cpuset);
         CPU_SET(cpu_id, &cpuset);
         if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
-            throw std::runtime_error("Failed to bind CAN TX thread to Core " + std::to_string(cpu_id));
+            logger_->error("Failed to bind CAN TX thread to Core {}", cpu_id);
         }
 
         can_frame tx_frame;
@@ -170,17 +176,23 @@ void SocketCAN::open(std::string interface) {
     });
 }
 
-void SocketCAN::close() {
+void MotorsSocketCAN::close() {
     receiving_ = false;
     tx_cv_.notify_one();
     if (receiver_thread_.joinable()) receiver_thread_.join();
     if (sender_thread_.joinable()) sender_thread_.join();
 
-    if (sockfd_ != INIT_FD) ::close(sockfd_);
+    if (sockfd_ != INIT_FD) {
+        if (::close(sockfd_) < 0) {
+            logger_->warn("Failed to close socket {}: {}", interface_, strerror(errno));
+        } else {
+            logger_->info("CAN interface {} closed successfully.", interface_);
+        }
+    }
     sockfd_ = INIT_FD;
 }
 
-void SocketCAN::transmit(const can_frame &frame) {
+void MotorsSocketCAN::transmit(const can_frame &frame) {
     if (sockfd_ == INIT_FD) {
         logger_->error("Unable to transmit: Socket not open");
         return;
@@ -189,22 +201,22 @@ void SocketCAN::transmit(const can_frame &frame) {
     tx_cv_.notify_one();
 }
 
-void SocketCAN::add_can_callback(const CanCbkFunc callback, const CanCbkId id) {
+void MotorsSocketCAN::add_can_callback(const CanCbkFunc callback, const CanCbkId id) {
     std::lock_guard<std::mutex> lock(can_callback_mutex_);
     can_callback_list_[id] = callback;
 }
 
-void SocketCAN::remove_can_callback(CanCbkId id) {
+void MotorsSocketCAN::remove_can_callback(CanCbkId id) {
     std::lock_guard<std::mutex> lock(can_callback_mutex_);
     can_callback_list_.erase(id);
 }
 
-void SocketCAN::clear_can_callbacks() {
+void MotorsSocketCAN::clear_can_callbacks() {
     std::lock_guard<std::mutex> lock(can_callback_mutex_);
     can_callback_list_.clear();
 }
 
-void SocketCAN::set_key_extractor(CanCbkKeyExtractor extractor) {
+void MotorsSocketCAN::set_key_extractor(CanCbkKeyExtractor extractor) {
     std::lock_guard<std::mutex> lock(can_callback_mutex_);
     key_extractor_ = std::move(extractor);
 }

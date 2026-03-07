@@ -39,7 +39,7 @@ using CanCbkId = uint16_t;
 using CanCbkMap = std::unordered_map<CanCbkId, CanCbkFunc>;
 using CanCbkKeyExtractor = std::function<CanCbkId(const can_frame &)>;
 
-class SocketCAN {
+class MotorsSocketCAN {
    private:
     std::string interface_;  // The network interface name
     int sockfd_ = -1;        // The file descriptor for the CAN socket
@@ -63,21 +63,29 @@ class SocketCAN {
     std::thread sender_thread_;
     std::atomic<int> send_sleep_us_{0};
 
-    SocketCAN(std::string interface);
+    MotorsSocketCAN(std::string interface);
 
-    static std::shared_ptr<SocketCAN> createInstance(const std::string &interface) {
-        return std::shared_ptr<SocketCAN>(new SocketCAN(interface));
+    static std::shared_ptr<MotorsSocketCAN> createInstance(const std::string &interface) {
+        return std::shared_ptr<MotorsSocketCAN>(new MotorsSocketCAN(interface));
     }
     static std::shared_ptr<spdlog::logger> logger_;
-    static std::unordered_map<std::string, std::shared_ptr<SocketCAN>> instances_;
+    static std::unordered_map<std::string, std::shared_ptr<MotorsSocketCAN>> instances_;
 
    public:
-    SocketCAN(const SocketCAN &) = delete;
-    SocketCAN &operator=(const SocketCAN &) = delete;
-    ~SocketCAN();
+    MotorsSocketCAN(const MotorsSocketCAN &) = delete;
+    MotorsSocketCAN &operator=(const MotorsSocketCAN &) = delete;
+    ~MotorsSocketCAN();
     static void init_logger(std::shared_ptr<spdlog::logger> logger) { logger_ = logger; }
-    static std::shared_ptr<SocketCAN> get(std::string interface) {
-        if (logger_.get() == nullptr) logger_ = spdlog::stdout_color_mt("SocketCAN");
+    static std::shared_ptr<MotorsSocketCAN> get(std::string interface) {
+        if (!logger_) {
+            logger_ = spdlog::get("motors");
+            if (!logger_) {
+                std::vector<spdlog::sink_ptr> sinks;
+                sinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_st>());
+                logger_ = std::make_shared<spdlog::logger>("motors", std::begin(sinks), std::end(sinks));
+                spdlog::register_logger(logger_);
+            }
+        }
         if (instances_.find(interface) == instances_.end()) instances_[interface] = createInstance(interface);
         return instances_[interface];
     }

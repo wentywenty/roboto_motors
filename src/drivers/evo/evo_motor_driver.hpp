@@ -95,6 +95,6 @@ class EvoMotorDriver : public MotorDriver {
     void write_register_evo(uint8_t index, int32_t value);
     void save_register_evo();
     virtual void can_rx_cbk(const can_frame& rx_frame);
-    std::shared_ptr<SocketCAN> can_;
+    std::shared_ptr<MotorsSocketCAN> can_;
     std::string can_interface_;
 };

@@ -118,5 +118,5 @@ class DmMotorDriver : public MotorDriver {
     void write_register_dm(uint8_t rid, int32_t value);
     void save_register_dm();
     virtual void can_rx_cbk(const can_frame& rx_frame);
-    std::shared_ptr<SocketCAN> can_;
+    std::shared_ptr<MotorsSocketCAN> can_;
 };

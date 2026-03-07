@@ -8,7 +8,7 @@ EVO_Limit_Param evo_limit_param[EVO_Num_Of_Model] = {
 
 EvoMotorDriver::EvoMotorDriver(uint16_t motor_id, const std::string& interface_type, const std::string& can_interface,
                                EVO_Motor_Model motor_model, double motor_zero_offset)
-    : MotorDriver(), can_(SocketCAN::get(can_interface)), motor_model_(motor_model) {
+    : MotorDriver(), can_(MotorsSocketCAN::get(can_interface)), motor_model_(motor_model) {
     if (interface_type != "can") {
         throw std::runtime_error("EVO driver only support CAN interface");
     }
@@ -113,6 +113,8 @@ bool EvoMotorDriver::write_motor_flash() { return true; }
 bool EvoMotorDriver::set_motor_zero() {
     // send set zero command
     EvoMotorDriver::set_motor_zero_evo();
+    Timer::sleep_for(normal_sleep_time);
+    EvoMotorDriver::refresh_motor_status();
     Timer::sleep_for(setup_sleep_time);  // wait for motor to set zero
     logger_->info("motor_id: {0}\tposition: {1}\t", motor_id_, get_motor_pos());
     EvoMotorDriver::unlock_motor();
@@ -139,7 +141,7 @@ void EvoMotorDriver::can_rx_cbk(const can_frame& rx_frame) {
     t_int = (rx_frame.data[4] & 0x0F) << 8 | rx_frame.data[5];
     error_id_ = rx_frame.data[6];
     if (error_id_ > 0) {
-        if (logger_) {
+            if (logger_) {
             logger_->error("can_interface: {0}\tmotor_id: {1}\terror_id: 0x{2:x}", can_interface_, motor_id_, (uint32_t)error_id_);
         }
     }
