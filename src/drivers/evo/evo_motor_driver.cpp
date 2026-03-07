@@ -113,7 +113,7 @@ bool EvoMotorDriver::write_motor_flash() { return true; }
 bool EvoMotorDriver::set_motor_zero() {
     // send set zero command
     EvoMotorDriver::set_motor_zero_evo();
-    Timer::sleep_for(normal_sleep_time);
+    Timer::sleep_for(setup_sleep_time);
     EvoMotorDriver::refresh_motor_status();
     Timer::sleep_for(setup_sleep_time);  // wait for motor to set zero
     logger_->info("motor_id: {0}\tposition: {1}\t", motor_id_, get_motor_pos());

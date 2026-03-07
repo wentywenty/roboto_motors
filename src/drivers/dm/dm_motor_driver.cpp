@@ -117,7 +117,7 @@ bool DmMotorDriver::write_motor_flash() { return true; }
 bool DmMotorDriver::set_motor_zero() {
     // send set zero command
     DmMotorDriver::set_motor_zero_dm();
-    Timer::sleep_for(normal_sleep_time);
+    Timer::sleep_for(setup_sleep_time);
     DmMotorDriver::refresh_motor_status();
     Timer::sleep_for(setup_sleep_time);  // wait for motor to set zero
     logger_->info("motor_id: {0}\tposition: {1}\t", motor_id_, get_motor_pos());
