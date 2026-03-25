@@ -47,6 +47,11 @@ install(TARGETS motors dm_motors evo_motors motors_protocol
   RUNTIME DESTINATION bin
 )
 
+# Install our custom Config for non-ROS consumers (Deb mode)
+install(FILES cmake/roboto_motorsConfig.cmake
+  DESTINATION lib/cmake/roboto_motors
+)
+
 pybind11_add_module(motors_py
   src/pybind_module.cpp
 )

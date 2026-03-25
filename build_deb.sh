@@ -5,7 +5,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 PACKAGE="roboto-motors"
-VERSION="1.0.0"
+VERSION="1.2.0"
 ARCH="$(dpkg --print-architecture)"
 PREFIX="/opt/roboparty"
 DEB_DIR="${PACKAGE}_${VERSION}_${ARCH}"
