@@ -12,6 +12,12 @@
 
 #include "utils.hpp"
 
+enum class CommType {
+    CAN = 0,         // Standard CAN 2.0 (8-byte payload)
+    CANFD = 1,       // Physical CAN-FD (64-byte payload slot)
+    ETHERCAT = 2     // EtherCAT communication
+};
+
 class MotorDriver {
    public:
     enum MotorControlMode_e {
@@ -30,6 +36,21 @@ class MotorDriver {
 
     static std::shared_ptr<MotorDriver> create_motor(uint16_t motor_id, const std::string& interface_type, const std::string& interface,
                                                     const std::string& motor_type, const int motor_model, uint16_t master_id_offset=0, const double motor_zero_offset=0.0);
+    
+    /**
+    * @brief Retrieves the broadcast control CAN ID for Multi-Drop (One-to-Many) mode based on the motor brand.
+    * * This static function acts as the system's "Protocol Dictionary," responsible for providing 
+    * the synchronization control identifiers required by the physical layer for different 
+    * brands (e.g., LeadRobot LRO, EVO).
+    *
+    * @param motor_type Motor brand/type string:
+    * - "LRO": Returns LeadRobot specialized Extended Frame ID (0x8080 | CAN_EFF_FLAG).
+    * - "EVO": Returns EVO specialized Standard Frame ID (0x20).
+    * - "XYN": Returns Xynova specialized Standard Frame ID (0x20).
+    * - Others: Returns 0, indicating the brand does not support or is not configured for Multi-Drop mode.
+    * * @return uint32_t The physical layer broadcast ID. Returns 0 if the brand does not support Multi-Drop.
+    */
+    static uint32_t get_group_can_id(const std::string& motor_type);
 
     /**
      * @brief Locks the motor to prevent movement.
@@ -146,6 +167,16 @@ class MotorDriver {
     virtual void reset_motor_id() = 0;
 
     /**
+     * @brief Gets the size of the command data for this motor.
+     */
+    virtual uint8_t get_command_size() { return 8; }
+
+    /**
+     * @brief Packs the current control data into the provided buffer slot.
+     */
+    virtual void pack_cmd_data(uint8_t* buffer) {}
+
+    /**
      * @brief Retrieves the ID of the motor.
      *
      * This function returns the unique identifier (ID) of the motor.
@@ -223,6 +254,8 @@ class MotorDriver {
     std::atomic<float> motor_spd_{0.f};
     std::atomic<float> motor_current_{0.f};
     std::atomic<float> motor_temperature_{0.f};
+
+    CommType comm_type_;
 };
 
 using union32_t = union Union32 {

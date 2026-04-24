@@ -36,12 +36,15 @@ target_include_directories(motors
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(motors PUBLIC ${PUBLIC_DEPENDENCIES} dm_motors evo_motors motors_protocol)
+target_link_libraries(motors PUBLIC ${PUBLIC_DEPENDENCIES} 
+  dm_motors evo_motors lro_motors
+  motors_can motors_canfd motors_group_canfd
+)
 
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY src/ DESTINATION include FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
 
-install(TARGETS motors dm_motors evo_motors motors_protocol
+install(TARGETS motors dm_motors evo_motors lro_motors motors_can motors_canfd motors_group_canfd 
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
@@ -63,7 +66,6 @@ target_include_directories(motors_py
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
 )
 
-
 target_link_libraries(motors_py PUBLIC motors)
 
 set(PYTHON_INSTALL_DIR "lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
@@ -75,7 +77,7 @@ install(TARGETS motors_py
 )
 
 if(ament_cmake_FOUND)
-    ament_export_libraries(motors dm_motors evo_motors motors_protocol)
+    ament_export_libraries(motors dm_motors evo_motors lro_motors motors_can motors_canfd motors_group_canfd)
     ament_export_include_directories(include)
     ament_package()
 endif()

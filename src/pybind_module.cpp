@@ -1,6 +1,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include "motor_driver.hpp"
+#include "drivers/dm/dm_motor_driver.hpp"
+#include "drivers/evo/evo_motor_driver.hpp"
+#include "drivers/lro/lro_motor_driver.hpp"
+// #include "drivers/xyn/xyn_motor_driver.hpp"
+#include "protocol/group_canfd/canfd_group.hpp"
 
 namespace py = pybind11;
 
@@ -46,4 +51,12 @@ PYBIND11_MODULE(motors_py, m) {
         .def("get_motor_current", &MotorDriver::get_motor_current)
         .def("get_motor_temperature", &MotorDriver::get_motor_temperature)
         .def("clear_motor_error", &MotorDriver::clear_motor_error);
+
+    py::class_<CanfdGroupManager, std::shared_ptr<CanfdGroupManager>>(m, "BusManager")
+        .def(py::init([](const std::string &name, uint32_t group_id) {
+            return std::make_shared<CanfdGroupManager>(
+                MotorsSocketCANFD::get(name), group_id);
+        }), py::arg("name"), py::arg("group_id"))
+        .def("add_motor", &CanfdGroupManager::add_motor)
+        .def("sync", &CanfdGroupManager::sync_transmit);
 }

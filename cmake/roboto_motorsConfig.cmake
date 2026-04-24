@@ -41,9 +41,18 @@ endfunction()
 # Find all component libraries
 set(RobotoMotors_LIBRARIES "")
 _add_imported_lib(motors)
+
 _add_imported_lib(dm_motors)
 _add_imported_lib(evo_motors)
-_add_imported_lib(motors_protocol)
+_add_imported_lib(lro_motors)
+# _add_imported_lib(xyn_motors)
+
+_add_imported_lib(motors_can)
+_add_imported_lib(motors_canfd)
+# _add_imported_lib(motors_ethercanfd)
+_add_imported_lib(motors_group_canfd)
+# _add_imported_lib(motors_ethercant)
+# _add_imported_lib(motors_group_ethercant)
 
 # Create the INTERFACE target
 add_library(roboto_motors::roboto_motors INTERFACE IMPORTED)
