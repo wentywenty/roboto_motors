@@ -1,7 +1,4 @@
 file(GLOB CAN_SRCS *.cpp)
-add_library(motors_protocol
-        STATIC
-        ${CAN_SRCS}
-)
-target_include_directories(motors_protocol PUBLIC ./can)
-target_link_libraries(motors_protocol PUBLIC ${PUBLIC_DEPENDENCIES})
+add_library(motors_can STATIC ${CAN_SRCS})
+target_include_directories(motors_can PUBLIC ./)
+target_link_libraries(motors_can PUBLIC ${PUBLIC_DEPENDENCIES})
