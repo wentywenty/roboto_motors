@@ -36,7 +36,7 @@ DmMotorDriver::DmMotorDriver(uint16_t motor_id, const std::string& interface_typ
 DmMotorDriver::~DmMotorDriver() { 
     if (comm_type_ == CommType::CANFD) {
         canfd_->remove_canfd_callback(master_id_);
-    } else {
+    } else if (comm_type_ == CommType::CAN) {
         can_->remove_can_callback(master_id_); 
     }
 }
@@ -75,7 +75,7 @@ void DmMotorDriver::lock_motor() {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -111,7 +111,7 @@ void DmMotorDriver::unlock_motor() {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -257,7 +257,7 @@ void DmMotorDriver::get_motor_param(uint8_t param_cmd) {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -308,7 +308,7 @@ void DmMotorDriver::motor_pos_cmd(float pos, float spd, bool ignore_limit) {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -346,7 +346,7 @@ void DmMotorDriver::motor_spd_cmd(float spd) {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -404,7 +404,7 @@ void DmMotorDriver::motor_mit_cmd(float f_p, float f_v, float f_kp, float f_kd, 
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -445,7 +445,7 @@ void DmMotorDriver::set_motor_zero_dm() {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -481,7 +481,7 @@ void DmMotorDriver::clear_motor_error_dm() {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -523,7 +523,7 @@ void DmMotorDriver::write_register_dm(uint8_t rid, float value) {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -565,7 +565,7 @@ void DmMotorDriver::write_register_dm(uint8_t rid, int32_t value) {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -603,7 +603,7 @@ void DmMotorDriver::save_register_dm() {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 
@@ -641,7 +641,7 @@ void DmMotorDriver::refresh_motor_status() {
         can_->transmit(tx_frame);
     }
     {
-        response_count_++;    
+        response_count_++;
     }
 }
 

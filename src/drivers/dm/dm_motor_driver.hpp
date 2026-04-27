@@ -122,5 +122,4 @@ class DmMotorDriver : public MotorDriver {
     virtual void canfd_rx_cbk(const canfd_frame& rx_frame);
     std::shared_ptr<MotorsSocketCAN> can_;
     std::shared_ptr<MotorsSocketCANFD> canfd_;
-    std::string can_interface_;
 };

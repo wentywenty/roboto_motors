@@ -50,7 +50,8 @@ PYBIND11_MODULE(motors_py, m) {
         .def("get_motor_spd", &MotorDriver::get_motor_spd)
         .def("get_motor_current", &MotorDriver::get_motor_current)
         .def("get_motor_temperature", &MotorDriver::get_motor_temperature)
-        .def("clear_motor_error", &MotorDriver::clear_motor_error);
+        .def("clear_motor_error", &MotorDriver::clear_motor_error)
+        .def("get_can_name", &MotorDriver::get_can_name);
 
     py::class_<CanfdGroupManager, std::shared_ptr<CanfdGroupManager>>(m, "BusManager")
         .def(py::init([](const std::string &name, uint32_t group_id) {

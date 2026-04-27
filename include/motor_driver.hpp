@@ -96,6 +96,18 @@ class MotorDriver {
      */
     virtual bool set_motor_zero() = 0;
 
+    /**
+     * @brief Permanently burns current in-memory motor configuration parameters to Flash.
+     *
+     * This function triggers the motor's internal persistent storage logic, ensuring 
+     * that parameters modified via write_register-style commands (such as ID, 
+     * limits, gains, etc.) are retained after a power cycle or reboot.
+     * * @note For certain motors (e.g., EVO series), this operation may be bundled 
+     * with the set_motor_zero command.
+     *
+     * @return true if the burn command was successfully transmitted.
+     * @return false if the burn command failed to transmit.
+     */
     virtual bool write_motor_flash() = 0;
 
     /**
@@ -186,6 +198,17 @@ class MotorDriver {
     virtual uint8_t get_motor_id() { return motor_id_; }
 
     /**
+     * @brief Retrieves the name of the CAN/CAN-FD bus interface associated with the motor.
+     *
+     * This function returns a string (e.g., "can0", "can9") indicating the specific 
+     * physical bus hardware where the motor instance is connected. It is primarily 
+     * used for debugging, logging, and fault isolation in multi-bus systems.
+     *
+     * @return std::string The name of the bus interface.
+     */
+    virtual std::string get_can_name() { return can_interface_; }
+
+    /**
      * @brief Retrieves the control mode of the motor.
      *
      * This function returns the current control mode of the motor.
@@ -256,6 +279,7 @@ class MotorDriver {
     std::atomic<float> motor_temperature_{0.f};
 
     CommType comm_type_;
+    std::string can_interface_;
 };
 
 using union32_t = union Union32 {

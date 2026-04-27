@@ -105,10 +105,10 @@ class LroMotorDriver : public MotorDriver {
     virtual bool write_motor_flash() override;
 
     virtual void get_motor_param(uint8_t param_cmd) override;
-    virtual void motor_pos_cmd(float pos, float spd, bool ignore_limit) override;
-    virtual void motor_spd_cmd(float spd) override;
+    virtual void motor_pos_cmd(float pos, float spd, bool ignore_limit) override {};
+    virtual void motor_spd_cmd(float spd) override {};
     virtual void motor_mit_cmd(float f_p, float f_v, float f_kp, float f_kd, float f_t) override;
-    virtual void reset_motor_id() override;
+    virtual void reset_motor_id() override {};
     virtual void set_motor_control_mode(uint8_t motor_control_mode) override;
     virtual int get_response_count() const override { 
         return response_count_; 
@@ -142,5 +142,4 @@ class LroMotorDriver : public MotorDriver {
 
     virtual void canfd_rx_cbk(const canfd_frame& rx_frame);
     std::shared_ptr<MotorsSocketCANFD> canfd_;
-    std::string can_interface_;
 };
