@@ -1,8 +1,6 @@
 #include "lro_motor_driver.hpp"
 
-// Default parameter ranges (can be reconfigured via 0x06 config commands)
 LRO_Limit_Param lro_limit_param[LRO_Num_Of_Motor] = {
-    // {PosMax, SpdMax, TauMax, OKpMax, OKdMax}
     {12.5, 45.0, 40.0, 500.0, 5.0},  // LRO_PJ3_55_5550
     {12.5, 45.0, 40.0, 500.0, 5.0},  // LRO_PJ3_60_6562
     {12.5, 30.0, 60.0, 500.0, 5.0},  // LRO_PJ3_75_8462
@@ -19,9 +17,11 @@ LroMotorDriver::LroMotorDriver(uint16_t motor_id, const std::string& interface_t
     limit_param_ = lro_limit_param[motor_model_];
     can_interface_ = can_interface;
     motor_zero_offset_ = motor_zero_offset;
+
     if (interface_type == "canfd" || interface_type == "ethercanfd") {
         comm_type_ = CommType::CANFD;
         motor_index_ = 0;
+        canfd_ = MotorsSocketCANFD::get(can_interface);
 
         CanFdCbkFunc canfd_callback = std::bind(&LroMotorDriver::canfd_rx_cbk, this, std::placeholders::_1);
         canfd_->add_canfd_callback(canfd_callback, motor_id_);
@@ -39,7 +39,6 @@ LroMotorDriver::~LroMotorDriver() {
     }
 }
 
-// Enable motor (enter control state)
 void LroMotorDriver::lock_motor() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame{};
@@ -61,7 +60,6 @@ void LroMotorDriver::lock_motor() {
     }
 }
 
-// Disable motor (disable power stage)
 void LroMotorDriver::unlock_motor() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame{};
@@ -84,27 +82,41 @@ void LroMotorDriver::unlock_motor() {
 }
 
 uint8_t LroMotorDriver::init_motor() {
+    // send disable command to enter read mode
     LroMotorDriver::unlock_motor();
     Timer::sleep_for(normal_sleep_time);
+    LroMotorDriver::set_motor_control_mode(MIT);
+    Timer::sleep_for(normal_sleep_time);
+    // send enable command to enter contorl mode
     LroMotorDriver::lock_motor();
     Timer::sleep_for(normal_sleep_time);
     LroMotorDriver::refresh_motor_status();
     Timer::sleep_for(normal_sleep_time);
-    LroMotorDriver::refresh_motor_status();
-    Timer::sleep_for(normal_sleep_time);
+    switch (error_id_) {
+        case LROError::LRO_MOTOR_OVERHEAT:
+            return LROError::LRO_MOTOR_OVERHEAT;
+        case LROError::LRO_OVER_CURRENT:
+            return LROError::LRO_OVER_CURRENT;
+        case LROError::LRO_UNDER_VOLTAGE:
+            return LROError::LRO_UNDER_VOLTAGE;
+        case LROError::LRO_ENCODER_ERROR:
+            return LROError::LRO_ENCODER_ERROR;
+        case LROError::LRO_BRAKE_OVERVOLT:
+            return LROError::LRO_BRAKE_OVERVOLT;
+        case LROError::LRO_DRV_ERROR:
+            return LROError::LRO_DRV_ERROR;
+        default:
+            return error_id_;
+    }
     return error_id_;
 }
 
 void LroMotorDriver::deinit_motor() {
-    LroMotorDriver::refresh_motor_status(); // Send zero torque MIT command to stop, then disable
-    Timer::sleep_for(normal_sleep_time);
     LroMotorDriver::unlock_motor();
     Timer::sleep_for(normal_sleep_time);
 }
 
 bool LroMotorDriver::write_motor_flash() {
-    // LeadRobot doesn't have a generic flash write command;
-    // parameters are saved via specific config commands.
     return true;
 }
 
@@ -491,18 +503,18 @@ void LroMotorDriver::pack_cmd_data(uint8_t* buffer) {
     t = range_map(f_t, -limit_param_.TauMax, limit_param_.TauMax, uint16_t(0), bitmax<uint16_t>(12));
 
     // 3. Fill the buffer according to LRO protocol bitfields (Big-Endian)
-    // Layout: Mode[3] + KP[12] + KD[9] + POS[16] + SPD[12] + TOR[12] = 64 bits total
-    // Byte 0: Mode(3 bits) + KP[11:7](5 bits)
-    buffer[0] = (uint8_t)(((LRO_MODE_MIT & 0x07) << 5) | ((kp >> 7) & 0x1F));
+    // Layout: Mode[3] + ID[5] + KP[12] + KD[9] + POS[16] + SPD[12] + TOR[12] = 64 bits total
+    // Byte 0: Mode(3 bits) + Motor_ID(5 bits)
+    buffer[0] = (uint8_t)(((LRO_MODE_MIT & 0x07) << 5) | (motor_id_ & 0x1F));
     
-    // Byte 1: KP[6:0](7 bits) + KD[8](1 bit)
-    buffer[1] = (uint8_t)(((kp & 0x7F) << 1) | ((kd >> 8) & 0x01));
+    // Byte 1: KP[11:4](8 bits)
+    buffer[1] = (uint8_t)((kp >> 4) & 0xFF);
     
-    // Byte 2: KD[7:0](8 bits)
-    buffer[2] = (uint8_t)(kd & 0xFF);
-    
-    // Byte 3: POS[15:8](8 bits)
-    buffer[3] = (uint8_t)((p >> 8) & 0xFF);
+    // Byte 2: KP[3:0](4 bits) + KD[8:5](4 bits)
+    buffer[2] = (uint8_t)(((kp & 0x0F) << 4) | ((kd >> 5) & 0x0F));
+
+    // Byte 3: KD[4:0](5 bits) + POS[15:13](3 bits)
+    buffer[3] = (uint8_t)(((kd & 0x1F) << 3) | ((p >> 13) & 0x07));
     
     // Byte 4: POS[7:0](8 bits)
     buffer[4] = (uint8_t)(p & 0xFF);

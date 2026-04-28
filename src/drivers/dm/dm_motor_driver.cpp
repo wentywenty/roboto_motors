@@ -44,7 +44,7 @@ DmMotorDriver::~DmMotorDriver() {
 void DmMotorDriver::lock_motor() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame;
-        tx_frame.can_id = motor_id_;  // change according to the mode
+        tx_frame.can_id = motor_id_;
         tx_frame.len = 0x08;
         tx_frame.flags = CANFD_BRS;
 
@@ -60,7 +60,7 @@ void DmMotorDriver::lock_motor() {
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
         can_frame tx_frame;
-        tx_frame.can_id = motor_id_;  // change according to the mode
+        tx_frame.can_id = motor_id_;
         tx_frame.can_dlc = 0x08;
 
         tx_frame.data[0] = 0xFF;
@@ -82,7 +82,7 @@ void DmMotorDriver::lock_motor() {
 void DmMotorDriver::unlock_motor() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame;
-        tx_frame.can_id = motor_id_;  // change according to the mode
+        tx_frame.can_id = motor_id_;
         tx_frame.len = 0x08;
         tx_frame.flags = CANFD_BRS;
 
@@ -94,10 +94,11 @@ void DmMotorDriver::unlock_motor() {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFD;
+
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
         can_frame tx_frame;
-        tx_frame.can_id = motor_id_;  // change according to the mode
+        tx_frame.can_id = motor_id_;
         tx_frame.can_dlc = 0x08;
 
         tx_frame.data[0] = 0xFF;
@@ -108,6 +109,7 @@ void DmMotorDriver::unlock_motor() {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFD;
+
         can_->transmit(tx_frame);
     }
     {
@@ -119,7 +121,7 @@ uint8_t DmMotorDriver::init_motor() {
     // send disable command to enter read mode
     DmMotorDriver::unlock_motor();
     Timer::sleep_for(normal_sleep_time);
-    set_motor_control_mode(MIT);
+    DmMotorDriver::set_motor_control_mode(MIT);
     Timer::sleep_for(normal_sleep_time);
     // send enable command to enter contorl mode
     DmMotorDriver::lock_motor();
@@ -239,6 +241,7 @@ void DmMotorDriver::get_motor_param(uint8_t param_cmd) {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFF;
+
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
         can_frame tx_frame;
@@ -254,6 +257,7 @@ void DmMotorDriver::get_motor_param(uint8_t param_cmd) {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFF;
+
         can_->transmit(tx_frame);
     }
     {
@@ -416,7 +420,7 @@ void DmMotorDriver::set_motor_control_mode(uint8_t motor_control_mode) {
 void DmMotorDriver::set_motor_zero_dm() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame;
-        tx_frame.can_id = motor_id_;  // change according to the mode
+        tx_frame.can_id = motor_id_;
         tx_frame.len = 0x08;
         tx_frame.flags = CANFD_BRS;
 
@@ -428,10 +432,11 @@ void DmMotorDriver::set_motor_zero_dm() {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFE;
+
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
         can_frame tx_frame;
-        tx_frame.can_id = motor_id_;  // change according to the mode
+        tx_frame.can_id = motor_id_;
         tx_frame.can_dlc = 0x08;
         
         tx_frame.data[0] = 0xFF;
@@ -442,6 +447,7 @@ void DmMotorDriver::set_motor_zero_dm() {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFE;
+
         can_->transmit(tx_frame);
     }
     {
@@ -452,7 +458,7 @@ void DmMotorDriver::set_motor_zero_dm() {
 void DmMotorDriver::clear_motor_error_dm() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame;
-        tx_frame.can_id = motor_id_;  // change according to the mode
+        tx_frame.can_id = motor_id_;
         tx_frame.len = 0x08;
         tx_frame.flags = CANFD_BRS;
 
@@ -464,10 +470,11 @@ void DmMotorDriver::clear_motor_error_dm() {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFB;
+
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
         can_frame tx_frame;
-        tx_frame.can_id = motor_id_;  // change according to the mode
+        tx_frame.can_id = motor_id_;
         tx_frame.can_dlc = 0x08;
 
         tx_frame.data[0] = 0xFF;
@@ -478,6 +485,7 @@ void DmMotorDriver::clear_motor_error_dm() {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFB;
+
         can_->transmit(tx_frame);
     }
     {
@@ -505,6 +513,7 @@ void DmMotorDriver::write_register_dm(uint8_t rid, float value) {
         tx_frame.data[5] = *(vbuf + 1);
         tx_frame.data[6] = *(vbuf + 2);
         tx_frame.data[7] = *(vbuf + 3);
+
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
         can_frame tx_frame;
@@ -520,6 +529,7 @@ void DmMotorDriver::write_register_dm(uint8_t rid, float value) {
         tx_frame.data[5] = *(vbuf + 1);
         tx_frame.data[6] = *(vbuf + 2);
         tx_frame.data[7] = *(vbuf + 3);
+
         can_->transmit(tx_frame);
     }
     {
@@ -547,6 +557,7 @@ void DmMotorDriver::write_register_dm(uint8_t rid, int32_t value) {
         tx_frame.data[5] = *(vbuf + 1);
         tx_frame.data[6] = *(vbuf + 2);
         tx_frame.data[7] = *(vbuf + 3);
+
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
         can_frame tx_frame;
@@ -562,6 +573,7 @@ void DmMotorDriver::write_register_dm(uint8_t rid, int32_t value) {
         tx_frame.data[5] = *(vbuf + 1);
         tx_frame.data[6] = *(vbuf + 2);
         tx_frame.data[7] = *(vbuf + 3);
+
         can_->transmit(tx_frame);
     }
     {
@@ -585,6 +597,7 @@ void DmMotorDriver::save_register_dm() {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFF;
+
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
         can_frame tx_frame;
@@ -600,6 +613,7 @@ void DmMotorDriver::save_register_dm() {
         tx_frame.data[5] = 0xFF;
         tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFF;
+
         can_->transmit(tx_frame);
     }
     {
@@ -623,6 +637,7 @@ void DmMotorDriver::refresh_motor_status() {
         tx_frame.data[5] = 0x00;
         tx_frame.data[6] = 0x00;
         tx_frame.data[7] = 0x00;
+
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
         can_frame tx_frame;
@@ -638,6 +653,7 @@ void DmMotorDriver::refresh_motor_status() {
         tx_frame.data[5] = 0x00;
         tx_frame.data[6] = 0x00;
         tx_frame.data[7] = 0x00;
+        
         can_->transmit(tx_frame);
     }
     {

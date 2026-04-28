@@ -44,22 +44,18 @@ EvoMotorDriver::~EvoMotorDriver() {
 void EvoMotorDriver::lock_motor() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame{};
-        tx_frame.can_id = EVOFD_CMD_ID;
-        tx_frame.len = 64;
+        tx_frame.can_id = motor_id_;
+        tx_frame.len = 0x08;
         tx_frame.flags = CANFD_BRS;
 
-        for (int i = 0; i < 64; i++) {
-            tx_frame.data[i] = 0xFF;
-        }
-
+        tx_frame.data[0] = 0xFF;
+        tx_frame.data[1] = 0xFF;
+        tx_frame.data[2] = 0xFF;
+        tx_frame.data[3] = 0xFF;
+        tx_frame.data[4] = 0xFF;
+        tx_frame.data[5] = 0xFF;
+        tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFC;
-        tx_frame.data[15] = 0xFC;
-        tx_frame.data[23] = 0xFC;
-        tx_frame.data[31] = 0xFC;
-        tx_frame.data[39] = 0xFC;
-        tx_frame.data[47] = 0xFC;
-        tx_frame.data[55] = 0xFC;
-        tx_frame.data[63] = 0xFC;
 
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
@@ -86,22 +82,18 @@ void EvoMotorDriver::lock_motor() {
 void EvoMotorDriver::unlock_motor() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame{};
-        tx_frame.can_id = EVOFD_CMD_ID;
-        tx_frame.len = 64;
+        tx_frame.can_id = motor_id_;
+        tx_frame.len = 0x08;
         tx_frame.flags = CANFD_BRS;
-
-        for (int i = 0; i < 64; i++) {
-            tx_frame.data[i] = 0xFF;
-        }
         
+        tx_frame.data[0] = 0xFF;
+        tx_frame.data[1] = 0xFF;
+        tx_frame.data[2] = 0xFF;
+        tx_frame.data[3] = 0xFF;
+        tx_frame.data[4] = 0xFF;
+        tx_frame.data[5] = 0xFF;
+        tx_frame.data[6] = 0xFF;
         tx_frame.data[7] = 0xFD;
-        tx_frame.data[15] = 0xFD;
-        tx_frame.data[23] = 0xFD;
-        tx_frame.data[31] = 0xFD;
-        tx_frame.data[39] = 0xFD;
-        tx_frame.data[47] = 0xFD;
-        tx_frame.data[55] = 0xFD;
-        tx_frame.data[63] = 0xFD;
 
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
@@ -225,6 +217,16 @@ void EvoMotorDriver::canfd_rx_cbk(const canfd_frame& rx_frame) {
         response_count_ = 0;
     }
     if (rx_frame.len < 8) return;
+
+    if (!(rx_frame.flags & CANFD_FDF)) {
+        can_frame frame{};
+        frame.can_id = rx_frame.can_id;
+        frame.can_dlc = rx_frame.len;
+        memcpy(frame.data, rx_frame.data, 8);
+        can_rx_cbk(frame);
+        return;
+    }
+
     uint16_t pos_int = 0;
     uint16_t spd_int = 0;
     uint16_t t_int = 0;
@@ -325,14 +327,14 @@ void EvoMotorDriver::motor_mit_cmd(float f_p, float f_v, float f_kp, float f_kd,
         // tx_frame.len = 0x40;
         // tx_frame.flags = CANFD_BRS;
         // int offset = motor_index_ * 8;
-        // tx_frame.data[offset + 0] = p >> 8;
-        // tx_frame.data[offset + 1] = p & 0xFF;
-        // tx_frame.data[offset + 2] = v >> 4;
-        // tx_frame.data[offset + 3] = ((v & 0x0F) << 4) | (kp >> 8);
-        // tx_frame.data[offset + 4] = kp & 0xFF;
-        // tx_frame.data[offset + 5] = kd >> 4;
-        // tx_frame.data[offset + 6] = ((kd & 0x0F) << 4) | (t >> 8);
-        // tx_frame.data[offset + 7] = t & 0xFF;
+        // tx_frame.data[0] = p >> 8;
+        // tx_frame.data[1] = p & 0xFF;
+        // tx_frame.data[2] = v >> 4;
+        // tx_frame.data[3] = ((v & 0x0F) << 4) | (kp >> 8);
+        // tx_frame.data[4] = kp & 0xFF;
+        // tx_frame.data[5] = kd >> 4;
+        // tx_frame.data[6] = ((kd & 0x0F) << 4) | (t >> 8);
+        // tx_frame.data[7] = t & 0xFF;
 
         // canfd_->transmit(tx_frame);
 
@@ -365,22 +367,18 @@ void EvoMotorDriver::set_motor_control_mode(uint8_t motor_control_mode) {
 void EvoMotorDriver::set_motor_zero_evo() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame{};
-        tx_frame.can_id = EVOFD_CMD_ID;
-        tx_frame.len = 64;
+        tx_frame.can_id = motor_id_;
+        tx_frame.len = 0x08;
         tx_frame.flags = CANFD_BRS;
 
-        for (int i = 0; i < 64; i++) {
-            tx_frame.data[i] = 0xFF;
-        }
-
-        tx_frame.data[7] = 0xFD;
-        tx_frame.data[15] = 0xFD;
-        tx_frame.data[23] = 0xFD;
-        tx_frame.data[31] = 0xFD;
-        tx_frame.data[39] = 0xFD;
-        tx_frame.data[47] = 0xFD;
-        tx_frame.data[55] = 0xFD;
-        tx_frame.data[63] = 0xFD;
+        tx_frame.data[0] = 0xFF;
+        tx_frame.data[1] = 0xFF;
+        tx_frame.data[2] = 0xFF;
+        tx_frame.data[3] = 0xFF;
+        tx_frame.data[4] = 0xFF;
+        tx_frame.data[5] = 0xFF;
+        tx_frame.data[6] = 0xFF;
+        tx_frame.data[7] = 0xFE;
 
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
@@ -407,22 +405,18 @@ void EvoMotorDriver::set_motor_zero_evo() {
 void EvoMotorDriver::clear_motor_error_evo() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame{};
-        tx_frame.can_id = EVOFD_CMD_ID;
-        tx_frame.len = 64;
+        tx_frame.can_id = motor_id_;
+        tx_frame.len = 0x08;
         tx_frame.flags = CANFD_BRS;
 
-        for (int i = 0; i < 64; i++) {
-            tx_frame.data[i] = 0xFF;
-        }
-
-        tx_frame.data[7] = 0xFB;
-        tx_frame.data[15] = 0xFB;
-        tx_frame.data[23] = 0xFB;
-        tx_frame.data[31] = 0xFB;
-        tx_frame.data[39] = 0xFB;
-        tx_frame.data[47] = 0xFB;
-        tx_frame.data[55] = 0xFB;
-        tx_frame.data[63] = 0xFB;
+        tx_frame.data[0] = 0xFF;
+        tx_frame.data[1] = 0xFF;
+        tx_frame.data[2] = 0xFF;
+        tx_frame.data[3] = 0xFF;
+        tx_frame.data[4] = 0xFF;
+        tx_frame.data[5] = 0xFF;
+        tx_frame.data[6] = 0xFF;
+        tx_frame.data[7] = 0xFD;
 
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
@@ -501,14 +495,14 @@ void EvoMotorDriver::save_register_evo() {
         for (int i = 0; i < 64; i++) tx_frame.data[i] = 0xFF;
         
         int offset = motor_index_ * 8;
-        tx_frame.data[offset + 0] = 0x67; // EVO Header/Feature Byte
-        tx_frame.data[offset + 1] = 0x00; // 0x00 is typically the Save Instruction index
-        tx_frame.data[offset + 2] = 0x00;
-        tx_frame.data[offset + 3] = 0x00;
-        tx_frame.data[offset + 4] = 0x00;
-        tx_frame.data[offset + 5] = 0x00;
-        tx_frame.data[offset + 6] = 0x00;
-        tx_frame.data[offset + 7] = 0x76; // Tail/End Byte
+        tx_frame.data[0] = 0x67; // EVO Header/Feature Byte
+        tx_frame.data[1] = 0x00; // 0x00 is typically the Save Instruction index
+        tx_frame.data[2] = 0x00;
+        tx_frame.data[3] = 0x00;
+        tx_frame.data[4] = 0x00;
+        tx_frame.data[5] = 0x00;
+        tx_frame.data[6] = 0x00;
+        tx_frame.data[7] = 0x76; // Tail/End Byte
 
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
@@ -535,23 +529,18 @@ void EvoMotorDriver::save_register_evo() {
 void EvoMotorDriver::refresh_motor_status() {
     if (comm_type_ == CommType::CANFD) {
         canfd_frame tx_frame{};
-        tx_frame.can_id = EVOFD_CMD_ID;
-        tx_frame.len = 64;
+        tx_frame.can_id = motor_id_;
+        tx_frame.len = 0x08;
         tx_frame.flags = CANFD_BRS;
 
-        for (int i = 0; i < 64; i++) {
-            tx_frame.data[i] = 0xFF;
-        }
-        
-        int offset = motor_index_ * 8;
-        tx_frame.data[offset + 0] = 0xFF;
-        tx_frame.data[offset + 1] = 0xFF;
-        tx_frame.data[offset + 2] = 0xFF;
-        tx_frame.data[offset + 3] = 0xFF;
-        tx_frame.data[offset + 4] = 0xFF;
-        tx_frame.data[offset + 5] = 0xFF;
-        tx_frame.data[offset + 6] = 0xFF;
-        tx_frame.data[offset + 7] = 0xFC;
+        tx_frame.data[0] = 0xFF;
+        tx_frame.data[1] = 0xFF;
+        tx_frame.data[2] = 0xFF;
+        tx_frame.data[3] = 0xFF;
+        tx_frame.data[4] = 0xFF;
+        tx_frame.data[5] = 0xFF;
+        tx_frame.data[6] = 0xFF;
+        tx_frame.data[7] = 0xFC;
 
         canfd_->transmit(tx_frame);
     } else if (comm_type_ == CommType::CAN) {
