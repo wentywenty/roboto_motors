@@ -363,6 +363,26 @@ void LroMotorDriver::motor_mit_cmd(float f_p, float f_v, float f_kp, float f_kd,
     }
 }
 
+void LroMotorDriver::reset_motor_id() {
+    // Reset all motors on the bus to ID 0x01
+    canfd_frame tx_frame{};
+    tx_frame.can_id = 0x7FF;
+    tx_frame.len = 0x06;
+    tx_frame.flags = CANFD_BRS;
+
+    tx_frame.data[0] = 0x7F;
+    tx_frame.data[1] = 0x7F;
+    tx_frame.data[2] = 0x00;
+    tx_frame.data[3] = LRO_CMD_RESET_ID;
+    tx_frame.data[4] = 0x7F;
+    tx_frame.data[5] = 0x7F;
+
+    canfd_->transmit(tx_frame);
+    {
+        response_count_++;
+    }
+}
+
 void LroMotorDriver::set_motor_control_mode(uint8_t motor_control_mode) {
     motor_control_mode_ = motor_control_mode;
     // LeadRobot doesn't need explicit mode switching;
@@ -529,23 +549,6 @@ void LroMotorDriver::pack_cmd_data(uint8_t* buffer) {
     buffer[7] = (uint8_t)(t & 0xFF);
 }
 
-// void LroMotorDriver::reset_motor_id() {
-//     // Reset all motors on the bus to ID 0x01
-//     canfd_frame tx_frame{};
-//     tx_frame.can_id = 0x7FF;
-//     tx_frame.len = 0x06;
-//     tx_frame.flags = CANFD_BRS;
-
-//     tx_frame.data[0] = 0x7F;
-//     tx_frame.data[1] = 0x7F;
-//     tx_frame.data[2] = 0x00;
-//     tx_frame.data[3] = LRO_CMD_RESET_ID;
-//     tx_frame.data[4] = 0x7F;
-//     tx_frame.data[5] = 0x7F;
-
-//     canfd_->transmit(tx_frame);
-//     response_count_++;
-// }
 // // ------------------------------------------------------------------
 // // 0x7FF setup commands
 // // ------------------------------------------------------------------

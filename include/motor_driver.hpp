@@ -173,9 +173,61 @@ class MotorDriver {
      * @return The count of responses received from the motor.
      */
     virtual int get_response_count() const = 0;
+
+    /**
+     * @brief Requests a real-time status update from the physical motor.
+     *
+     * This function sends a query command to the motor to refresh its internal 
+     * telemetry data, such as current position, velocity, and torque/current. 
+     * The retrieved data is typically used to update the driver's internal 
+     * state variables for subsequent getter calls.
+     * * @note In a high-speed control loop, this is often called before 
+     * retrieving feedback to ensure the controller is acting on the most 
+     * recent hardware state.
+     */
     virtual void refresh_motor_status() = 0;
 
+    /**
+     * @brief Clears active error flags and resets the motor's protection state.
+     *
+     * This function sends a command to the motor controller to acknowledge and 
+     * clear internal faults (e.g., over-current, over-voltage, or stall errors). 
+     * If the underlying physical condition causing the error has been resolved, 
+     * the motor will transition from a fault/protection state back to a 
+     * standby or ready state.
+     * * @note This does not fix the root cause of hardware issues; it only attempts 
+     * to reset the software error state of the motor's MCU.
+     */
+    virtual void clear_motor_error() = 0;
 
+    /**
+     * @brief Retrieves the unique identifier (ID) of the motor.
+     *
+     * This function returns the current motor ID stored in the driver instance. 
+     * This ID is used as the primary addressing element on the CAN/CAN-FD bus.
+     *
+     * @return uint8_t The unique ID of the motor.
+     */
+    virtual uint8_t get_motor_id() { return motor_id_; }
+
+    /**
+     * @brief Configures a new ID for the physical motor hardware.
+     *
+     * This function triggers the hardware-specific protocol command to change the 
+     * motor's internal ID. This is typically used during initial commissioning or 
+     * when reconfiguring the robot topology.
+     * * @note Depending on the implementation (e.g., EVO or LRO), this may require 
+     * a subsequent call to write_motor_flash() to persist across power cycles.
+     */
+    virtual void set_motor_id() = 0;
+
+    /**
+     * @brief Resets the motor's hardware ID to the factory default value.
+     *
+     * Sends a protocol command to revert the motor's ID to its default state. 
+     * This is useful for recovering motors with unknown IDs or clearing 
+     * configuration errors during maintenance.
+     */
     virtual void reset_motor_id() = 0;
 
     /**
@@ -187,15 +239,6 @@ class MotorDriver {
      * @brief Packs the current control data into the provided buffer slot.
      */
     virtual void pack_cmd_data(uint8_t* buffer) {}
-
-    /**
-     * @brief Retrieves the ID of the motor.
-     *
-     * This function returns the unique identifier (ID) of the motor.
-     *
-     * @return The ID of the motor.
-     */
-    virtual uint8_t get_motor_id() { return motor_id_; }
 
     /**
      * @brief Retrieves the name of the CAN/CAN-FD bus interface associated with the motor.
@@ -261,8 +304,6 @@ class MotorDriver {
      * @return The temperature of the motor.
      */
     virtual float get_motor_temperature() { return motor_temperature_; }
-
-    virtual void clear_motor_error() = 0;
 
    protected:
     std::shared_ptr<spdlog::logger> logger_;

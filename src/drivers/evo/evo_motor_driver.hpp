@@ -125,18 +125,20 @@ class EvoMotorDriver : public MotorDriver {
     virtual void deinit_motor() override;
     virtual bool set_motor_zero() override;
     virtual bool write_motor_flash() override;
-
     virtual void get_motor_param(uint8_t param_cmd) override;
+    
     virtual void motor_pos_cmd(float pos, float spd, bool ignore_limit) override {};
     virtual void motor_spd_cmd(float spd) override {};
     virtual void motor_mit_cmd(float f_p, float f_v, float f_kp, float f_kd, float f_t) override;
-    virtual void reset_motor_id() override {};
     virtual void set_motor_control_mode(uint8_t motor_control_mode) override;
     virtual int get_response_count() const { 
         return response_count_; 
     }
     virtual void refresh_motor_status() override;
     virtual void clear_motor_error() override;
+
+    virtual void set_motor_id() override {};
+    virtual void reset_motor_id() override {};
 
     virtual uint8_t get_command_size() override { return 8; }
     virtual void pack_cmd_data(uint8_t* buffer) override;
